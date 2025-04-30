@@ -16,7 +16,8 @@ defmodule LiveCheckers.Application do
       # Start a worker by calling: LiveCheckers.Worker.start_link(arg)
       # {LiveCheckers.Worker, arg},
       # Start to serve requests, typically the last entry
-      LiveCheckersWeb.Endpoint
+      LiveCheckersWeb.Endpoint,
+      LiveCheckers.Game.LobbyManager
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

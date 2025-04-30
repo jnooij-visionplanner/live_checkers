@@ -18,6 +18,7 @@ defmodule LiveCheckersWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/lobby", LobbyLive, :index
   end
 
   # Other scopes may use custom stacks.
