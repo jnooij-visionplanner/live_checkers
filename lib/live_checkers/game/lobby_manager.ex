@@ -73,14 +73,19 @@ defmodule LiveCheckers.Game.LobbyManager do
         {:reply, {:error, :not_found}, state}
 
       lobby ->
-        if player in lobby.players do
-          {:reply, {:error, :already_joined}, state}
-        else
-          updated_lobby = Map.update!(lobby, :players, &[player | &1])
-          new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
-          new_players = Map.put(state.players, player, lobby_id)
+        cond do
+          player in lobby.players ->
+            {:reply, {:error, :already_joined}, state}
 
-          {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies, players: new_players}}
+          length(lobby.players) >= 2 ->
+            {:reply, {:error, :lobby_full}, state}
+
+          true ->
+            updated_lobby = Map.update!(lobby, :players, &[player | &1])
+            new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
+            new_players = Map.put(state.players, player, lobby_id)
+
+            {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies, players: new_players}}
         end
     end
   end

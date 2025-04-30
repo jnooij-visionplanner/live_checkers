@@ -69,6 +69,9 @@ defmodule LiveCheckersWeb.LobbyLive do
         lobby = Enum.find(socket.assigns.lobbies, &(&1.id == lobby_id))
         {:noreply, assign(socket, page: :lobby, current_lobby: lobby, error_message: nil)}
 
+      {:error, :lobby_full} ->
+        {:noreply, assign(socket, error_message: "This lobby is full (maximum 2 players)")}
+
       {:error, reason} ->
         {:noreply, assign(socket, error_message: "Error joining lobby: #{reason}")}
     end

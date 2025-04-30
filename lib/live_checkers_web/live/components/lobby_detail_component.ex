@@ -27,8 +27,22 @@ defmodule LiveCheckersWeb.LobbyDetailComponent do
       </div>
 
       <div class="text-center">
-        <p class="text-gray-500 mb-2">Waiting for opponent...</p>
-        <!-- Game will be implemented here later -->
+        <%= if length(@lobby.players) < 2 do %>
+          <p class="text-gray-500 mb-2">Waiting for opponent...</p>
+        <% else %>
+          <p class="text-green-500 font-bold mb-4">Game ready to start!</p>
+          <%= if @lobby.creator == @username do %>
+            <button
+              phx-click="start-game"
+              phx-target={@myself}
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Start Game
+            </button>
+          <% else %>
+            <p class="text-gray-500">Waiting for creator to start the game...</p>
+          <% end %>
+        <% end %>
       </div>
     </div>
     """

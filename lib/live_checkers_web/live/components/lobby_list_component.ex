@@ -40,17 +40,32 @@ defmodule LiveCheckersWeb.LobbyListComponent do
                 <div>
                   <p class="font-medium"><%= lobby.name %></p>
                   <p class="text-sm text-gray-500">Created by: <%= lobby.creator %></p>
-                  <p class="text-xs text-gray-400">Players: <%= Enum.count(lobby.players) %></p>
+                  <p class="text-xs text-gray-400">
+                    Players: <%= Enum.count(lobby.players) %>/2
+                    <%= if Enum.count(lobby.players) >= 2 do %>
+                      <span class="text-red-500 font-bold ml-2">FULL</span>
+                    <% end %>
+                  </p>
                 </div>
                 <div>
-                  <button
-                    phx-click="join-lobby"
-                    phx-value-id={lobby.id}
-                    phx-target={@myself}
-                    class="bg-green-500 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
-                  >
-                    Join
-                  </button>
+                  <%= if Enum.count(lobby.players) >= 2 do %>
+                    <button
+                      class="bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded cursor-not-allowed"
+                      disabled
+                    >
+                      Full
+                    </button>
+                  <% else %>
+                    <button
+                      phx-click="join-lobby"
+                      phx-value-id={lobby.id}
+                      phx-target={@myself}
+                      class="bg-green-500 hover:bg-green-700 text-white text-sm font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+                    >
+                      Join
+                    </button>
+                  <% end %>
+
                   <%= if lobby.creator == @username do %>
                     <button
                       phx-click="delete-lobby"
