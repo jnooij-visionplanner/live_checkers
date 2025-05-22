@@ -15,9 +15,10 @@ defmodule LiveCheckers.Application do
       {Finch, name: LiveCheckers.Finch},
       # Start a worker by calling: LiveCheckers.Worker.start_link(arg)
       # {LiveCheckers.Worker, arg},
+      LiveCheckers.Game.LobbyManager,
+      LiveCheckers.Game.GamePersistence,
       # Start to serve requests, typically the last entry
-      LiveCheckersWeb.Endpoint,
-      LiveCheckers.Game.LobbyManager
+      LiveCheckersWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

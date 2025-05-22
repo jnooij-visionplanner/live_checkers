@@ -2,6 +2,8 @@ defmodule LiveCheckersWeb.LobbyLive do
   use LiveCheckersWeb, :live_view
   alias LiveCheckers.Game.LobbyManager
   alias LiveCheckersWeb.{LoginComponent, LobbyListComponent, LobbyDetailComponent}
+  alias LiveCheckersWeb.GameBoardComponent
+  alias LiveCheckers.Game.GameCoordinator
 
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -81,11 +83,12 @@ defmodule LiveCheckersWeb.LobbyLive do
     case LobbyManager.delete_lobby(lobby_id) do
       {:ok, _lobby} ->
         broadcast_lobby_update()
-        {:noreply, assign(socket,
-          page: :lobby_list,
-          lobbies: LobbyManager.get_lobbies(),
-          current_lobby: nil
-        )}
+        {:noreply,
+         assign(socket,
+           page: :lobby_list,
+           lobbies: LobbyManager.get_lobbies(),
+           current_lobby: nil
+         )}
 
       {:error, :not_found} ->
         {:noreply, assign(socket, error_message: "Lobby not found")}
@@ -106,33 +109,81 @@ defmodule LiveCheckersWeb.LobbyLive do
         {:ok, :lobby_deleted} ->
           # Lobby was deleted because this was the last player
           broadcast_lobby_update()
-          {:noreply, assign(socket,
-            page: :lobby_list,
-            lobbies: LobbyManager.get_lobbies(),
-            current_lobby: nil
-          )}
+          {:noreply,
+           assign(socket,
+             page: :lobby_list,
+             lobbies: LobbyManager.get_lobbies(),
+             current_lobby: nil
+           )}
 
         {:ok, _updated_lobby} ->
           # Player was removed, lobby still exists
           broadcast_lobby_update()
-          {:noreply, assign(socket,
-            page: :lobby_list,
-            lobbies: LobbyManager.get_lobbies(),
-            current_lobby: nil
-          )}
+          {:noreply,
+           assign(socket,
+             page: :lobby_list,
+             lobbies: LobbyManager.get_lobbies(),
+             current_lobby: nil
+           )}
 
         {:error, _reason} ->
           # Error occurred, still go back to lobby list
-          {:noreply, assign(socket,
-            page: :lobby_list,
-            lobbies: LobbyManager.get_lobbies(),
-            current_lobby: nil
-          )}
+          {:noreply,
+           assign(socket,
+             page: :lobby_list,
+             lobbies: LobbyManager.get_lobbies(),
+             current_lobby: nil
+           )}
       end
     else
       # Already on the lobby list or not in a lobby
       {:noreply, assign(socket, page: :lobby_list, lobbies: LobbyManager.get_lobbies())}
     end
+  end
+
+  def handle_info({:start_game, lobby_id}, socket) do
+    case GameCoordinator.start_game(lobby_id) do
+      {:ok, game} ->
+        # Subscribe to game-specific events
+        Phoenix.PubSub.subscribe(LiveCheckers.PubSub, "game:#{lobby_id}")
+        # Broadcast game started event to all players in the lobby
+        Phoenix.PubSub.broadcast(LiveCheckers.PubSub, "lobbies", {:game_started, lobby_id, game})
+        # Update the current_lobby with the new game state before switching page
+        updated_lobby = %{socket.assigns.current_lobby | game_state: game, status: :in_game}
+        {:noreply, assign(socket, page: :game, current_lobby: updated_lobby, error_message: nil)}
+
+      {:error, reason} ->
+        {:noreply, assign(socket, error_message: "Failed to start game: #{reason}")}
+    end
+  end
+
+  def handle_info({:game_started, lobby_id, game}, socket) do
+    # Only update if we're in the same lobby
+    if socket.assigns.current_lobby && socket.assigns.current_lobby.id == lobby_id do
+      Phoenix.PubSub.subscribe(LiveCheckers.PubSub, "game:#{lobby_id}")
+      updated_lobby = %{socket.assigns.current_lobby | game_state: game, status: :in_game}
+      {:noreply, assign(socket, page: :game, current_lobby: updated_lobby)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:game_started, game}, socket) do
+    # Ensure the component receives the game state, likely through current_lobby
+    updated_lobby = %{socket.assigns.current_lobby | game_state: game}
+    {:noreply, assign(socket, page: :game, current_lobby: updated_lobby)}
+  end
+
+  def handle_info({:move_made, _player, _from, _to, _result, updated_game}, socket) do
+    # Update the game state within the current_lobby
+    updated_lobby = %{socket.assigns.current_lobby | game_state: updated_game}
+    {:noreply, assign(socket, current_lobby: updated_lobby)}
+  end
+
+  def handle_info({:game_over, _winner, updated_game}, socket) do
+    # Update the game state within the current_lobby
+    updated_lobby = %{socket.assigns.current_lobby | game_state: updated_game}
+    {:noreply, assign(socket, current_lobby: updated_lobby)}
   end
 
   def handle_info(:lobby_updated, socket) do
@@ -144,18 +195,32 @@ defmodule LiveCheckersWeb.LobbyLive do
       if socket.assigns.page == :lobby do
         # Get the updated version of the current lobby
         current_lobby_id = socket.assigns.current_lobby.id
+
         case LobbyManager.get_lobby(current_lobby_id) do
-          nil ->
+          {:ok, updated_lobby} ->
+            assign(socket, current_lobby: updated_lobby)
+
+          {:error, :not_found} ->
             # Lobby no longer exists, go back to list
             assign(socket, page: :lobby_list)
-          updated_lobby ->
-            assign(socket, current_lobby: updated_lobby)
         end
       else
         socket
       end
 
     {:noreply, assign(socket, lobbies: updated_lobbies)}
+  end
+
+  def handle_info({:game_loaded, loaded_game}, socket) do
+    # Subscribe to game-specific events for the loaded game
+    Phoenix.PubSub.subscribe(LiveCheckers.PubSub, "game:#{loaded_game.id}")
+
+    # Update the current lobby with the loaded game state
+    {:noreply, assign(socket,
+      page: :game,
+      current_lobby: %{socket.assigns.current_lobby | game_state: loaded_game},
+      error_message: nil
+    )}
   end
 
   defp broadcast_lobby_update do
@@ -192,6 +257,14 @@ defmodule LiveCheckersWeb.LobbyLive do
             id="lobby-detail"
             username={@username}
             lobby={@current_lobby}
+          />
+
+        <% :game -> %>
+          <.live_component
+            module={GameBoardComponent}
+            id="game-board"
+            username={@username}
+            game={@current_lobby.game_state}
           />
       <% end %>
     </div>

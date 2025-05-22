@@ -2,6 +2,8 @@ defmodule LiveCheckers.Game.LobbyManager do
   use GenServer
   require Logger
 
+  alias LiveCheckers.Game.Models.Lobby
+
   # Client API
 
   def start_link(_) do
@@ -36,6 +38,10 @@ defmodule LiveCheckers.Game.LobbyManager do
     GenServer.call(__MODULE__, {:delete_lobby, lobby_id})
   end
 
+  def update_lobby_game(lobby_id, game) do
+    GenServer.call(__MODULE__, {:update_lobby_game, lobby_id, game})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -52,13 +58,8 @@ defmodule LiveCheckers.Game.LobbyManager do
   def handle_call({:create_lobby, name, creator}, _from, state) do
     lobby_id = generate_id()
 
-    lobby = %{
-      id: lobby_id,
-      name: name,
-      creator: creator,
-      players: [creator],
-      created_at: DateTime.utc_now()
-    }
+    # Create a new lobby using the Lobby struct
+    lobby = Lobby.new(lobby_id, name, creator)
 
     new_lobbies = Map.put(state.lobbies, lobby_id, lobby)
     new_players = Map.put(state.players, creator, lobby_id)
@@ -74,14 +75,14 @@ defmodule LiveCheckers.Game.LobbyManager do
 
       lobby ->
         cond do
-          player in lobby.players ->
+          Lobby.has_player?(lobby, player) ->
             {:reply, {:error, :already_joined}, state}
 
-          length(lobby.players) >= 2 ->
+          Lobby.full?(lobby) ->
             {:reply, {:error, :lobby_full}, state}
 
           true ->
-            updated_lobby = Map.update!(lobby, :players, &[player | &1])
+            updated_lobby = Lobby.add_player(lobby, player)
             new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
             new_players = Map.put(state.players, player, lobby_id)
 
@@ -97,33 +98,28 @@ defmodule LiveCheckers.Game.LobbyManager do
         {:reply, {:error, :not_found}, state}
 
       lobby ->
-        if username not in lobby.players do
+        if not Lobby.has_player?(lobby, username) do
           # Player not in this lobby
           {:reply, {:error, :player_not_in_lobby}, state}
         else
-          # Remove player from the lobby's player list
-          remaining_players = Enum.filter(lobby.players, fn player -> player != username end)
-
-          # Remove player from players map
-          new_players = Map.delete(state.players, username)
-
-          cond do
-            # No players left - delete the lobby
-            Enum.empty?(remaining_players) ->
+          # Remove player from the lobby using the Lobby struct's function
+          case Lobby.remove_player(lobby, username) do
+            {:empty, _} ->
+              # No players left - delete the lobby
               new_lobbies = Map.delete(state.lobbies, lobby_id)
+              new_players = Map.delete(state.players, username)
               {:reply, {:ok, :lobby_deleted}, %{state | lobbies: new_lobbies, players: new_players}}
 
-            # Creator is leaving - assign a new creator
-            username == lobby.creator ->
-              new_creator = List.first(remaining_players)
-              updated_lobby = %{lobby | players: remaining_players, creator: new_creator}
+            {:update_creator, updated_lobby} ->
+              # Creator is leaving - assign a new creator
               new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
+              new_players = Map.delete(state.players, username)
               {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies, players: new_players}}
 
-            # Regular player leaving
-            true ->
-              updated_lobby = %{lobby | players: remaining_players}
+            {:ok, updated_lobby} ->
+              # Regular player leaving
               new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
+              new_players = Map.delete(state.players, username)
               {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies, players: new_players}}
           end
         end
@@ -151,7 +147,24 @@ defmodule LiveCheckers.Game.LobbyManager do
 
   @impl true
   def handle_call({:get_lobby, lobby_id}, _from, state) do
-    {:reply, Map.get(state.lobbies, lobby_id), state}
+    case Map.get(state.lobbies, lobby_id) do
+      nil -> {:reply, {:error, :not_found}, state}
+      lobby -> {:reply, {:ok, lobby}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:update_lobby_game, lobby_id, game}, _from, state) do
+    case Map.get(state.lobbies, lobby_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      lobby ->
+        updated_lobby = %{lobby | game_state: game, status: :in_game}
+        new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
+
+        {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies}}
+    end
   end
 
   # Private functions
