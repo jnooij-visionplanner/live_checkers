@@ -59,7 +59,7 @@ defmodule LiveCheckers.Game.CheckersGame do
     {:reply, state, state}
   end
 
-  def handle_call({:apply_move, {_from, _to}}, _from, %{status: :game_over} = state) do
+  def handle_call({:apply_move, {_f, _t}}, _caller, %{status: :game_over} = state) do
     {:reply, {:error, :game_over}, state}
   end
 

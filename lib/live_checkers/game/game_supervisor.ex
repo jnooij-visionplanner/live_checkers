@@ -9,8 +9,8 @@ defmodule LiveCheckers.Game.GameSupervisor do
   ## Public API
 
   @doc "Starts the supervisor"
-  def start_link(init_arg \\ :ok) do
-    DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  def start_link(_init_arg \\ []) do
+    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
   @doc "Starts a new game under the supervisor"
