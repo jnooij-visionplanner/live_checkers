@@ -52,4 +52,9 @@ defmodule LiveCheckersWeb.LobbyDetailComponent do
     send(self(), :back_to_lobbies)
     {:noreply, socket}
   end
+
+  def handle_event("start-game", _, socket) do
+    send(self(), {:start_game, socket.assigns.lobby.id})
+    {:noreply, socket}
+  end
 end

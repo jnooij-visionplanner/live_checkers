@@ -135,6 +135,10 @@ defmodule LiveCheckersWeb.LobbyLive do
     end
   end
 
+  def handle_info({:start_game, lobby_id}, socket) do
+    {:noreply, assign(socket, error_message: "Starting game for lobby #{lobby_id} not implemented")}
+  end
+
   def handle_info(:lobby_updated, socket) do
     # Always update the lobbies list
     updated_lobbies = LobbyManager.get_lobbies()
