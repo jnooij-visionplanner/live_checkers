@@ -36,6 +36,10 @@ defmodule LiveCheckers.Game.LobbyManager do
     GenServer.call(__MODULE__, {:delete_lobby, lobby_id})
   end
 
+  def start_game(lobby_id) do
+    GenServer.call(__MODULE__, {:start_game, lobby_id})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -152,6 +156,27 @@ defmodule LiveCheckers.Game.LobbyManager do
   @impl true
   def handle_call({:get_lobby, lobby_id}, _from, state) do
     {:reply, Map.get(state.lobbies, lobby_id), state}
+  end
+
+  @impl true
+  def handle_call({:start_game, lobby_id}, _from, state) do
+    case Map.get(state.lobbies, lobby_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      %{players: players} = lobby when length(players) < 2 ->
+        {:reply, {:error, :not_enough_players}, state}
+
+      lobby ->
+        if Map.has_key?(lobby, :game_pid) do
+          {:reply, {:error, :already_started}, state}
+        else
+          {:ok, pid} = LiveCheckers.Game.CheckersGame.start_link({lobby_id, Enum.reverse(lobby.players)})
+          updated_lobby = Map.put(lobby, :game_pid, pid)
+          new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
+          {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies}}
+        end
+    end
   end
 
   # Private functions
