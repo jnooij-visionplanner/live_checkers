@@ -40,6 +40,15 @@ defmodule LiveCheckersWeb.GameLive do
     <div class="container mx-auto p-4">
       <h1 class="text-xl font-bold mb-4">Game <%= @game_id %></h1>
       <BoardComponent.board board={@state.board} selected={@selected} />
+      <%= if @state.status == :game_over do %>
+        <div class="mt-4 p-4 bg-green-100 border border-green-400 rounded">
+          <%= if @state.winner do %>
+            Winner: <%= @state.winner %>
+          <% else %>
+            Draw!
+          <% end %>
+        </div>
+      <% end %>
     </div>
     """
   end

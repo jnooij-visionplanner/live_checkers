@@ -10,6 +10,7 @@ defmodule LiveCheckers.Game.CheckersGame do
   use GenServer
 
   alias Phoenix.PubSub
+  alias LiveCheckers.Game.Rules
 
   ## Client API
 
@@ -82,6 +83,7 @@ defmodule LiveCheckers.Game.CheckersGame do
           |> Map.put(to, piece)
 
         new_state = %{state | board: new_board, turn: opposite(state.turn)}
+        new_state = check_game_over(new_state)
         broadcast_state(new_state)
         {:reply, {:ok, new_state}, new_state}
     end
@@ -122,6 +124,30 @@ defmodule LiveCheckers.Game.CheckersGame do
 
   defp player_color(state, player) do
     Enum.find_value(state.players, fn {color, name} -> if name == player, do: color end)
+  end
+
+  defp check_game_over(state) do
+    board = state.board
+
+    black_left? = Enum.any?(board, fn {_pos, piece} -> match?({:black, _}, piece) end)
+    red_left? = Enum.any?(board, fn {_pos, piece} -> match?({:red, _}, piece) end)
+
+    cond do
+      not black_left? and not red_left? ->
+        %{state | status: :game_over, winner: nil}
+      not black_left? ->
+        %{state | status: :game_over, winner: state.players.red}
+      not red_left? ->
+        %{state | status: :game_over, winner: state.players.black}
+      Rules.legal_moves(board, :black) == [] and Rules.legal_moves(board, :red) == [] ->
+        %{state | status: :game_over, winner: nil}
+      Rules.legal_moves(board, :black) == [] ->
+        %{state | status: :game_over, winner: state.players.red}
+      Rules.legal_moves(board, :red) == [] ->
+        %{state | status: :game_over, winner: state.players.black}
+      true ->
+        state
+    end
   end
 
   defp initial_board do
