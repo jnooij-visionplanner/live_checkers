@@ -125,10 +125,10 @@ defmodule LiveCheckers.Game.CheckersGame do
   end
 
   defp initial_board do
-    for row <- 0..7, col <- 0..7, into: %{} do
+    for row <- 0..9, col <- 0..9, into: %{} do
       cond do
-        row < 3 and rem(row + col, 2) == 1 -> {{row, col}, {:black, :man}}
-        row > 4 and rem(row + col, 2) == 1 -> {{row, col}, {:red, :man}}
+        row < 4 and rem(row + col, 2) == 1 -> {{row, col}, {:black, :man}}
+        row > 5 and rem(row + col, 2) == 1 -> {{row, col}, {:red, :man}}
         true -> {{row, col}, nil}
       end
     end
