@@ -82,9 +82,10 @@ defmodule LiveCheckers.Game.Rules do
 
       capture_dest = {row + 2 * dr, col + 2 * dc}
       between = {row + dr, col + dc}
+      opp_color = other_color(color)
       capture_moves =
         if inside_board?(capture_dest) &&
-             match?({other_color(color), _}, Map.get(board, between)) &&
+             match?({^opp_color, _}, Map.get(board, between)) &&
              Map.get(board, capture_dest) == nil do
           [{from, capture_dest}]
         else
