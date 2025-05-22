@@ -11,6 +11,7 @@ defmodule LiveCheckers.Application do
       LiveCheckersWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:live_checkers, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: LiveCheckers.PubSub},
+      LiveCheckersWeb.Presence,
       # Start the Finch HTTP client for sending emails
       {Finch, name: LiveCheckers.Finch},
       # Start a worker by calling: LiveCheckers.Worker.start_link(arg)
