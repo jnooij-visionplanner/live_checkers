@@ -1,6 +1,7 @@
 defmodule LiveCheckers.Game.LobbyManager do
   use GenServer
   require Logger
+  alias Phoenix.PubSub
 
   # Client API
 
@@ -172,10 +173,28 @@ defmodule LiveCheckers.Game.LobbyManager do
           {:reply, {:error, :already_started}, state}
         else
           {:ok, pid} = LiveCheckers.Game.GameSupervisor.start_game(lobby_id, Enum.reverse(lobby.players))
+          PubSub.subscribe(LiveCheckers.PubSub, "game:" <> lobby_id)
           updated_lobby = Map.put(lobby, :game_pid, pid)
           new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
           {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies}}
         end
+    end
+  end
+
+  @impl true
+  def handle_info({:state_changed, %{id: id, status: :game_over}}, state) do
+    case Map.get(state.lobbies, id) do
+      nil ->
+        {:noreply, state}
+
+      lobby ->
+        PubSub.unsubscribe(LiveCheckers.PubSub, "game:" <> id)
+        new_lobbies = Map.delete(state.lobbies, id)
+        new_players = Enum.reduce(lobby.players, state.players, fn player, acc ->
+          Map.delete(acc, player)
+        end)
+        PubSub.broadcast(LiveCheckers.PubSub, "lobbies", :lobby_updated)
+        {:noreply, %{state | lobbies: new_lobbies, players: new_players}}
     end
   end
 
