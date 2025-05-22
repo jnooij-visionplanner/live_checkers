@@ -4,7 +4,7 @@ defmodule LiveCheckers.Game.RulesTest do
   alias LiveCheckers.Game.Rules
 
   defp empty_board do
-    for r <- 0..7, c <- 0..7, into: %{}, do: {{r, c}, nil}
+    for r <- 0..9, c <- 0..9, into: %{}, do: {{r, c}, nil}
   end
 
   describe "legal_moves/2" do
@@ -13,11 +13,11 @@ defmodule LiveCheckers.Game.RulesTest do
 
       moves_black = Rules.legal_moves(board, :black)
       assert {{2, 1}, {3, 0}} in moves_black
-      assert length(moves_black) == 7
+      assert length(moves_black) == 10
 
       moves_red = Rules.legal_moves(board, :red)
-      assert {{5, 0}, {4, 1}} in moves_red
-      assert length(moves_red) == 7
+      assert {{6, 1}, {5, 0}} in moves_red
+      assert length(moves_red) == 10
     end
   end
 
@@ -46,12 +46,12 @@ defmodule LiveCheckers.Game.RulesTest do
 
     test "moving to last row promotes" do
       board = empty_board()
-      board = Map.put(board, {6, 1}, {:black, :man})
+      board = Map.put(board, {8, 1}, {:black, :man})
 
-      assert Rules.valid_move?(board, :black, {6, 1}, {7, 0})
-      board = Rules.update_board(board, {{6, 1}, {7, 0}})
+      assert Rules.valid_move?(board, :black, {8, 1}, {9, 0})
+      board = Rules.update_board(board, {{8, 1}, {9, 0}})
 
-      assert Map.get(board, {7, 0}) == {:black, :king}
+      assert Map.get(board, {9, 0}) == {:black, :king}
     end
   end
 end

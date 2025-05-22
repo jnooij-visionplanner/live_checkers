@@ -5,7 +5,7 @@ defmodule LiveCheckers.Game.Rules do
   `{color, type}` tuples or `nil` when the square is empty.
   """
 
-  @board_range 0..7
+  @board_range 0..9
 
   @type color :: :black | :red
   @type piece_type :: :man | :king
@@ -17,10 +17,10 @@ defmodule LiveCheckers.Game.Rules do
   @doc "Returns the initial board setup for a game of checkers."
   @spec initial_board() :: board()
   def initial_board do
-    for row <- 0..7, col <- 0..7, into: %{} do
+    for row <- 0..9, col <- 0..9, into: %{} do
       cond do
-        row < 3 and rem(row + col, 2) == 1 -> {{row, col}, {:black, :man}}
-        row > 4 and rem(row + col, 2) == 1 -> {{row, col}, {:red, :man}}
+        row < 4 and rem(row + col, 2) == 1 -> {{row, col}, {:black, :man}}
+        row > 5 and rem(row + col, 2) == 1 -> {{row, col}, {:red, :man}}
         true -> {{row, col}, nil}
       end
     end
@@ -112,7 +112,7 @@ defmodule LiveCheckers.Game.Rules do
 
   defp maybe_promote({color, :man}, {row, _}) do
     cond do
-      color == :black and row == 7 -> {color, :king}
+      color == :black and row == 9 -> {color, :king}
       color == :red and row == 0 -> {color, :king}
       true -> {color, :man}
     end
