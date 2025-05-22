@@ -171,7 +171,7 @@ defmodule LiveCheckers.Game.LobbyManager do
         if Map.has_key?(lobby, :game_pid) do
           {:reply, {:error, :already_started}, state}
         else
-          {:ok, pid} = LiveCheckers.Game.CheckersGame.start_link({lobby_id, Enum.reverse(lobby.players)})
+          {:ok, pid} = LiveCheckers.Game.GameSupervisor.start_game(lobby_id, Enum.reverse(lobby.players))
           updated_lobby = Map.put(lobby, :game_pid, pid)
           new_lobbies = Map.put(state.lobbies, lobby_id, updated_lobby)
           {:reply, {:ok, updated_lobby}, %{state | lobbies: new_lobbies}}

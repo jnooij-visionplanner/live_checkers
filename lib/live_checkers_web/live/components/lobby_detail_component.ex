@@ -33,7 +33,7 @@ defmodule LiveCheckersWeb.LobbyDetailComponent do
           <p class="text-green-500 font-bold mb-4">Game ready to start!</p>
           <%= if @lobby.creator == @username do %>
             <button
-              phx-click="start-game"
+              phx-click="start_game"
               phx-target={@myself}
               class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
@@ -53,7 +53,7 @@ defmodule LiveCheckersWeb.LobbyDetailComponent do
     {:noreply, socket}
   end
 
-  def handle_event("start-game", _, socket) do
+  def handle_event("start_game", _, socket) do
     send(self(), {:start_game, socket.assigns.lobby.id})
     {:noreply, socket}
   end

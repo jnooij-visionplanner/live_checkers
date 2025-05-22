@@ -19,6 +19,7 @@ defmodule LiveCheckersWeb.Router do
 
     get "/", PageController, :home
     live "/lobby", LobbyLive, :index
+    live "/game/:id", GameLive, :show
   end
 
   # Other scopes may use custom stacks.

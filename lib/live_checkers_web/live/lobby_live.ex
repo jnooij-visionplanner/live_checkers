@@ -139,7 +139,10 @@ defmodule LiveCheckersWeb.LobbyLive do
     case LobbyManager.start_game(lobby_id) do
       {:ok, lobby} ->
         broadcast_lobby_update()
-        {:noreply, assign(socket, current_lobby: lobby, error_message: nil)}
+        {:noreply,
+         socket
+         |> assign(current_lobby: lobby, error_message: nil)
+         |> push_redirect(to: ~p"/game/#{lobby.id}")}
 
       {:error, reason} ->
         {:noreply, assign(socket, error_message: "Error starting game: #{reason}")}
@@ -160,7 +163,13 @@ defmodule LiveCheckersWeb.LobbyLive do
             # Lobby no longer exists, go back to list
             assign(socket, page: :lobby_list)
           updated_lobby ->
-            assign(socket, current_lobby: updated_lobby)
+            if Map.has_key?(updated_lobby, :game_pid) do
+              socket
+              |> assign(current_lobby: updated_lobby)
+              |> push_redirect(to: ~p"/game/#{updated_lobby.id}")
+            else
+              assign(socket, current_lobby: updated_lobby)
+            end
         end
       else
         socket

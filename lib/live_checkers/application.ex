@@ -17,6 +17,7 @@ defmodule LiveCheckers.Application do
       # {LiveCheckers.Worker, arg},
       # Start to serve requests, typically the last entry
       LiveCheckersWeb.Endpoint,
+      LiveCheckers.Game.GameSupervisor,
       LiveCheckers.Game.LobbyManager
     ]
 
