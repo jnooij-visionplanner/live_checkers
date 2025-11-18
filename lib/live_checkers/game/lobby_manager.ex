@@ -165,7 +165,7 @@ defmodule LiveCheckers.Game.LobbyManager do
       nil ->
         {:reply, {:error, :not_found}, state}
 
-      %{players: players} = lobby when length(players) < 2 ->
+      %{players: players} when length(players) < 2 ->
         {:reply, {:error, :not_enough_players}, state}
 
       lobby ->

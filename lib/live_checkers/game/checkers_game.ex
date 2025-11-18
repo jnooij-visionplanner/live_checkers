@@ -28,7 +28,7 @@ defmodule LiveCheckers.Game.CheckersGame do
   end
 
   @doc "Applies a move described by `{from, to}` coordinates." 
-  def apply_move(game_id, {from, to} = move) do
+  def apply_move(game_id, move) do
     GenServer.call(game_name(game_id), {:apply_move, move})
   end
 
@@ -59,7 +59,7 @@ defmodule LiveCheckers.Game.CheckersGame do
     {:reply, state, state}
   end
 
-  def handle_call({:apply_move, {from, to}}, _from, %{status: :game_over} = state) do
+  def handle_call({:apply_move, {_f, _t}}, _caller, %{status: :game_over} = state) do
     {:reply, {:error, :game_over}, state}
   end
 
